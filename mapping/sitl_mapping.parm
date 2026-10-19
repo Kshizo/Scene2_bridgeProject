@@ -1,0 +1,4 @@
+# SITL params for the mapping survey: with lidar rendering the sim runs < 1x real time, which
+# makes the (wall-clock based) gyro-rate prearm check fail. Lower loop rate + skip INS check.
+SCHED_LOOP_RATE 200
+ARMING_SKIPCHK 16

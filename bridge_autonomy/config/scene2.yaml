@@ -1,0 +1,110 @@
+# Scene-2 bridge inspection mission. Every geometric quantity the planner, GPS-denial
+# simulator and VIO use is derived from the files below; this file only holds tunables.
+
+root: ../..                    # project root, relative to this file; relative paths below hang off it
+
+scene:
+  world_name: scene2_world
+  world_sdf: scene2_ardupilot.sdf
+  parts_dir: scene2_parts                       # parts.json + per-part OBJs (BRIDGE_PARTS_SPEC.md)
+  vehicle_model: iris                           # <include><name> of the drone in the world
+  gz_partition: scene2
+  out_dir: maps/scene2                          # map, trajectory, logs, plan
+
+vehicle:
+  radius: 0.45                 # m, rotor tip circle (clearance is measured from the body centre)
+  takeoff_climb: 4.0           # m above the spawn point before joining the survey
+
+safety:
+  min_clearance: 1.6           # m from any structure / terrain / water to the drone centre
+  grid_resolution: 0.35        # m, occupancy grid for routing + clearance checks
+  grid_margin: 35.0            # m added around the bridge bounding box
+
+survey:                        # all offsets relative to geometry found in parts.json
+  standoff_side: 6.0           # m from the deck edge for the longitudinal side passes
+  side_extension: 12.0         # m beyond the first/last support along the bridge axis
+  side_levels:                 # heights of the side passes
+    - {ref: floor, offset: 1.8}
+    - {ref: soffit, offset: -3.0}
+    - {ref: deck_top, offset: 0.0}
+    - {ref: railing_top, offset: 3.0}
+  top_pass_offset: 3.5         # m above the highest railing
+  under_deck_offset: -2.0      # m below the soffit for passes under the deck
+  under_deck_levels_from_floor: [2.0]   # extra under-deck transverse levels above the floor
+  pier_standoff: 3.0           # m from the pier footprint for the helix around each pier
+  pier_helix_turns: 2.0
+  pier_face_standoff: 2.2      # m in front of pier faces (along the axis) for face passes
+  column_standoff: 1.6         # m from a column for the per-column orbit (dropped if it violates clearance)
+  abutment_standoff: 4.0       # m in front of the abutment face
+  pier_cluster_gap: 4.0        # m: columns closer than this along the axis belong to one pier
+
+motion:
+  v_max: 2.0                   # m/s in open air
+  v_min: 0.6                   # m/s at min_clearance
+  slow_clearance: 4.0          # m: below this clearance speed ramps down to v_min
+  accel: 0.6                   # m/s^2
+  yaw_rate_max_deg: 35.0
+  look_at_radius: 15.0         # m: yaw towards the nearest structure within this radius
+  sample_step: 0.1             # m between path samples
+
+gps_denied:
+  # the zone is the deck footprint (from parts.json), grown by margin, below the deck soffit
+  footprint_margin: 1.0        # m added around the deck footprint
+  top_offset: 0.0              # m relative to the deck bottom
+  switch_lookahead: 6.0        # m of path before the zone at which the EKF switches to VIO
+  gps_recover_hold: 4.0        # s of healthy GPS after leaving the zone before switching back
+  vio_lost_retreat: 3.0        # s of VIO loss inside the zone before retracing the path back out
+
+vio:
+  rgbd_topic: /mapper/rgbd     # <topic> of the rgbd_camera in the drone model
+  camera_link: camera_link     # link holding the camera (pose read from the model SDF)
+  process_hz: 10
+  max_features: 400
+  min_inliers: 20
+  keyframe_min_tracked: 120
+  keyframe_max_translation: 1.5
+  keyframe_max_rotation_deg: 15
+  depth_range: [0.3, 25.0]
+  align_gain: 0.05             # low-pass gain aligning the VIO frame to GPS (xy) / EKF (z, yaw) while GPS is good
+  max_jump: 0.5                # m: PnP poses further than this (+ max_speed*dt) from the prediction are rejected
+  max_speed: 3.0               # m/s
+  max_rot_jump_deg: 8.0
+  unhealthy_after: 0.6         # s without a good PnP -> unhealthy (stop feeding ArduPilot)
+  reinit_after: 1.0            # s unhealthy with GPS available -> re-initialise from GPS
+  healthy_hold: 2.0            # s of continuous health before the mission trusts VIO
+  mavlink: udpin:0.0.0.0:14561
+
+mavlink:
+  mission: udpin:0.0.0.0:14560
+  gps_sim: udpin:0.0.0.0:14562
+  sitl_outputs: [udp:127.0.0.1:14560, udp:127.0.0.1:14561, udp:127.0.0.1:14562]
+
+mapping:
+  lidar_link: lidar_link
+  lidar_topic: /mapper/lidar/points
+  rviz_config: mapping/bridge_map.rviz
+
+sitl:
+  ardupilot_dir: ~/ardupilot
+  ardupilot_gazebo_dir: ~/ardupilot_gazebo
+  vehicle: ArduCopter
+  frame: gazebo-iris
+  param_files:
+    - ~/ardupilot/Tools/autotest/default_params/copter.parm
+    - ~/ardupilot/Tools/autotest/default_params/gazebo-iris.parm
+  params:                      # extra params; VISO_POS_* are added from the camera link pose
+    SCHED_LOOP_RATE: 200       # sim runs < 1x real time with lidar + camera rendering
+    ARMING_SKIPCHK: 16         # wall-clock gyro-rate prearm check fails below 1x
+    VISO_TYPE: 1               # MAVLink external vision
+    VISO_DELAY_MS: 50
+    EK3_SRC1_POSXY: 3          # set 1: GPS
+    EK3_SRC1_VELXY: 3
+    EK3_SRC1_POSZ: 1
+    EK3_SRC1_VELZ: 3
+    EK3_SRC1_YAW: 1
+    EK3_SRC2_POSXY: 6          # set 2: external nav (VIO), baro height, compass yaw
+    EK3_SRC2_VELXY: 6
+    EK3_SRC2_POSZ: 1
+    EK3_SRC2_VELZ: 6
+    EK3_SRC2_YAW: 1
+    EK3_SRC_OPTIONS: 0

@@ -1,0 +1,4 @@
+maps/
+__pycache__/
+*.pyc
+*.log

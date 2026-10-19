@@ -1,0 +1,59 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 30; 32; 38
+    Fixed Frame: map
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 10
+      Plane Cell Count: 20
+      Color: 80; 80; 90
+      Offset: {X: -4.8, Y: 47.5, Z: 0}
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Bridge map (by class)
+      Enabled: true
+      Topic: {Value: /bridge/map, Depth: 1, Reliability Policy: Reliable, Durability Policy: Volatile, History Policy: Keep Last}
+      Color Transformer: RGB8
+      Style: Points
+      Size (Pixels): 2
+      Decay Time: 0
+      Queue Size: 1
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Live scan
+      Enabled: true
+      Topic: {Value: /bridge/scan, Depth: 1, Reliability Policy: Reliable, Durability Policy: Volatile, History Policy: Keep Last}
+      Color Transformer: FlatColor
+      Color: 255; 255; 0
+      Style: Points
+      Size (Pixels): 2
+      Decay Time: 0
+    - Class: rviz_default_plugins/Path
+      Name: Drone path
+      Enabled: true
+      Topic: {Value: /bridge/path, Depth: 1, Reliability Policy: Reliable, Durability Policy: Volatile, History Policy: Keep Last}
+      Color: 255; 60; 60
+      Line Style: Lines
+    - Class: rviz_default_plugins/TF
+      Name: Drone
+      Enabled: true
+      Marker Scale: 4
+      Show Names: true
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 120
+      Focal Point: {X: -4.8, Y: 47.5, Z: 4}
+      Pitch: 0.55
+      Yaw: 5.2
+      Target Frame: <Fixed Frame>
+Window Geometry:
+  Width: 1400
+  Height: 900
